@@ -33,6 +33,9 @@ import org.apache.ibatis.io.ResolverUtil;
 import org.apache.ibatis.io.Resources;
 
 /**
+ * TypeAliasRegistry 是维护别名配置的核心实现所在，其中提供了别名注册、别名查询的基本功能。
+ * 在 TypeAliasRegistry 的 typeAliases 字段（Map<String, Class<?>>类型）中记录了别名与 Java 类型之间的对应关系，
+ * 我们可以通过 registerAlias() 方法完成别名的注册
  * @author Clinton Begin
  */
 public class TypeAliasRegistry {
@@ -127,12 +130,15 @@ public class TypeAliasRegistry {
 
   public void registerAliases(String packageName, Class<?> superType) {
     ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
+    // 查找指定包下所有的superType类型
     resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
     Set<Class<? extends Class<?>>> typeSet = resolverUtil.getClasses();
     for (Class<?> type : typeSet) {
       // Ignore inner classes and interfaces (including package-info.java)
       // Skip also inner classes. See issue #6
+      // 过滤掉内部类、接口以及抽象类
       if (!type.isAnonymousClass() && !type.isInterface() && !type.isMemberClass()) {
+        //扫描类中的@Alias注解
         registerAlias(type);
       }
     }
@@ -151,11 +157,14 @@ public class TypeAliasRegistry {
     if (alias == null) {
       throw new TypeException("The parameter alias cannot be null");
     }
+    //将别名全部转换为小写
     // issue #748
     String key = alias.toLowerCase(Locale.ENGLISH);
+    //检测别名是否存在冲突，如果存在冲突，则直接抛出异常
     if (typeAliases.containsKey(key) && typeAliases.get(key) != null && !typeAliases.get(key).equals(value)) {
       throw new TypeException("The alias '" + alias + "' is already mapped to the value '" + typeAliases.get(key).getName() + "'.");
     }
+    //在typeAliases集合中记录别名与类之间的映射关系
     typeAliases.put(key, value);
   }
 

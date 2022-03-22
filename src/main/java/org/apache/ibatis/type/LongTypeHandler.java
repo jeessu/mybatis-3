@@ -45,6 +45,7 @@ public class LongTypeHandler extends BaseTypeHandler<Long> {
     return result == 0 && rs.wasNull() ? null : result;
   }
 
+
   @Override
   public Long getNullableResult(CallableStatement cs, int columnIndex)
       throws SQLException {

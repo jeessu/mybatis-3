@@ -49,16 +49,40 @@ import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * TypeHandle注册器
+ * 统一管理所有 TypeHandler 实例
+ *
+ * 有的 register() 重载中会尝试从 TypeHandler 类中的@MappedTypes 注解和 @MappedJdbcTypes 注解中读取信息。
+ * @MappedTypes 注解中可以配置 TypeHandler 实现类能够处理的 Java 类型的集合，
+ * @MappedJdbcTypes 注解中可以配置该 TypeHandler 实现类能够处理的 JDBC 类型集合。
+ *
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
 public final class TypeHandlerRegistry {
 
+  /**
+   * 记录了 JdbcType 与 TypeHandler 之间的关联关系
+   */
   private final Map<JdbcType, TypeHandler<?>> jdbcTypeHandlerMap = new EnumMap<>(JdbcType.class);
+  /**
+   * 该集合第一层 Key 是需要转换的 Java 类型，
+   * 第二层 Key 是转换的目标 JdbcType，
+   * 最终的 Value 是完成此次转换时所需要使用的 TypeHandler 对象
+   */
   private final Map<Type, Map<JdbcType, TypeHandler<?>>> typeHandlerMap = new ConcurrentHashMap<>();
+  /**
+   * 未知类型处理器
+   */
   private final TypeHandler<Object> unknownTypeHandler;
+  /**
+   * 该集合记录了全部 TypeHandler 的类型以及对应的 TypeHandler 实例对象
+   */
   private final Map<Class<?>, TypeHandler<?>> allTypeHandlersMap = new HashMap<>();
 
+  /**
+   * 空 TypeHandler 集合的标识，默认值为 Collections.emptyMap()。
+   */
   private static final Map<JdbcType, TypeHandler<?>> NULL_TYPE_HANDLER_MAP = Collections.emptyMap();
 
   private Class<? extends TypeHandler> defaultEnumTypeHandler = EnumTypeHandler.class;
@@ -255,6 +279,7 @@ public final class TypeHandlerRegistry {
     if (jdbcHandlerMap != null) {
       return NULL_TYPE_HANDLER_MAP.equals(jdbcHandlerMap) ? null : jdbcHandlerMap;
     }
+    //初始化指定Java类型的TypeHandler集合
     if (type instanceof Class) {
       Class<?> clazz = (Class<?>) type;
       if (Enum.class.isAssignableFrom(clazz)) {
@@ -265,9 +290,11 @@ public final class TypeHandlerRegistry {
           return typeHandlerMap.get(enumClass);
         }
       } else {
+        // 查找父类关联的TypeHandler集合，并将其作为clazz对应的TypeHandler集合
         jdbcHandlerMap = getJdbcHandlerMapForSuperclass(clazz);
       }
     }
+    //如果上述查找皆失败，则以NULL_TYPE_HANDLER_MAP作为clazz对应的TypeHandler集合
     typeHandlerMap.put(type, jdbcHandlerMap == null ? NULL_TYPE_HANDLER_MAP : jdbcHandlerMap);
     return jdbcHandlerMap;
   }
@@ -294,12 +321,14 @@ public final class TypeHandlerRegistry {
   private Map<JdbcType, TypeHandler<?>> getJdbcHandlerMapForSuperclass(Class<?> clazz) {
     Class<?> superclass = clazz.getSuperclass();
     if (superclass == null || Object.class.equals(superclass)) {
+      // 父类为Object或null则查找结束
       return null;
     }
     Map<JdbcType, TypeHandler<?>> jdbcHandlerMap = typeHandlerMap.get(superclass);
     if (jdbcHandlerMap != null) {
       return jdbcHandlerMap;
     } else {
+      //顺着继承树，递归查找父类对应的TypeHandler集合
       return getJdbcHandlerMapForSuperclass(superclass);
     }
   }
@@ -362,7 +391,16 @@ public final class TypeHandlerRegistry {
     register((Type) javaType, typeHandler);
   }
 
+  /**
+   *
+   * @param javaType  java类型
+   * @param typeHandler 默认处理器
+   * @param <T>
+   */
   private <T> void register(Type javaType, TypeHandler<? extends T> typeHandler) {
+    /**
+     * 获取注解 @MappedJdbcTypes的处理器，如果为null,则使用默认的typeHandler处理器
+     */
     MappedJdbcTypes mappedJdbcTypes = typeHandler.getClass().getAnnotation(MappedJdbcTypes.class);
     if (mappedJdbcTypes != null) {
       for (JdbcType handledJdbcType : mappedJdbcTypes.value()) {
@@ -388,15 +426,26 @@ public final class TypeHandlerRegistry {
     register((Type) type, jdbcType, handler);
   }
 
+  /**
+   * TypeHandlerRegistry.register() 方法有多个重载实现，这些重载中最基础的实现是三个参数的重载实现
+   *
+   * @param javaType java类型
+   * @param jdbcType 数据库类型
+   * @param handler 处理器
+   */
   private void register(Type javaType, JdbcType jdbcType, TypeHandler<?> handler) {
     if (javaType != null) {
       Map<JdbcType, TypeHandler<?>> map = typeHandlerMap.get(javaType);
       if (map == null || map == NULL_TYPE_HANDLER_MAP) {
         map = new HashMap<>();
       }
+      //将TypeHandler实例记录到typeHandlerMap集合
+      //第二层map 数据库类型
       map.put(jdbcType, handler);
+      //第一层map java类型
       typeHandlerMap.put(javaType, map);
     }
+    //向allTypeHandlersMap集合注册TypeHandler类型和对应的TypeHandler对象
     allTypeHandlersMap.put(handler.getClass(), handler);
   }
 

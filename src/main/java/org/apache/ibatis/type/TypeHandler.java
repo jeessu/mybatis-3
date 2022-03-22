@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * 类型处理器
  * @author Clinton Begin
  */
 public interface TypeHandler<T> {
@@ -29,6 +30,8 @@ public interface TypeHandler<T> {
 
   /**
    * Gets the result.
+   *
+   * 在通过PreparedStatement为SQL语句绑定参数时，会将传入的实参数据由JdbcType类型转换成Java类型
    *
    * @param rs
    *          the rs
