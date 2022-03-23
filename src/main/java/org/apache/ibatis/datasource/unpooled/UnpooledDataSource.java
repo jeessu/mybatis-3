@@ -33,13 +33,19 @@ import javax.sql.DataSource;
 import org.apache.ibatis.io.Resources;
 
 /**
+ * 在 Java 世界中，几乎所有数据源实现的底层都是依赖 JDBC 操作数据库的，而使用 JDBC 的第一步就是向 DriverManager 注册 JDBC 驱动类，之后才能创建数据库连接。
+ * DriverManager 中定义了 registeredDrivers 字段用于记录注册的 JDBC 驱动，这是一个 CopyOnWriteArrayList 类型的集合，是线程安全的。
+ *
  * @author Clinton Begin
  * @author Eduardo Macarron
  */
 public class UnpooledDataSource implements DataSource {
 
+  //加载 Driver 类的类加载器
   private ClassLoader driverClassLoader;
+  //数据库连接驱动的相关配置
   private Properties driverProperties;
+  //缓存所有已注册的数据库连接驱动
   private static Map<String, Driver> registeredDrivers = new ConcurrentHashMap<>();
 
   private String driver;
@@ -48,13 +54,16 @@ public class UnpooledDataSource implements DataSource {
   private String password;
 
   private Boolean autoCommit;
+  //事务隔离级别
   private Integer defaultTransactionIsolationLevel;
   private Integer defaultNetworkTimeout;
 
   static {
+    //从DriverManager中读取JDBC驱动
     Enumeration<Driver> drivers = DriverManager.getDrivers();
     while (drivers.hasMoreElements()) {
       Driver driver = drivers.nextElement();
+      //将DriverManager中的全部JDBC驱动记录到registeredDrivers集合
       registeredDrivers.put(driver.getClass().getName(), driver);
     }
   }
@@ -220,8 +229,12 @@ public class UnpooledDataSource implements DataSource {
   }
 
   private Connection doGetConnection(Properties properties) throws SQLException {
+
+    // 初始化数据库驱动
     initializeDriver();
+    // 创建数据库连接
     Connection connection = DriverManager.getConnection(url, properties);
+    //配置数据库连接
     configureConnection(connection);
     return connection;
   }

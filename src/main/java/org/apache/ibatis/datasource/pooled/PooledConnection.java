@@ -68,6 +68,11 @@ class PooledConnection implements InvocationHandler {
 
   /**
    * Method to see if the connection is usable.
+   * valid 字段值为 true；
+   * realConnection 字段值不为空；
+   * 执行 PooledDataSource.pingConnection() 方法，返回值为 true。
+   * 只有这三个条件都成立，才认为这个 PooledConnection 对象可用。
+   * 其中，PooledDataSource.pingConnection() 方法会尝试请求数据库，并执行一条测试 SQL 语句，检测是否真的能够访问到数据库
    *
    * @return True if the connection is usable
    */

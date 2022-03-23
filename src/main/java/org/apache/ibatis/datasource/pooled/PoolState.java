@@ -17,8 +17,12 @@ package org.apache.ibatis.datasource.pooled;
 
 import java.util.ArrayList;
 import java.util.List;
-
 /**
+ * PoolState这个类，它负责管理连接池中所有 PooledConnection 对象的状态，
+ * 维护了两个 ArrayList <PooledConnection> 集合按照 PooledConnection 对象的状态分类存储，
+ * 其中 idleConnections 集合用来存储空闲状态的 PooledConnection 对象，
+ * activeConnections 集合用来存储活跃状态的 PooledConnection 对象。
+
  * @author Clinton Begin
  */
 public class PoolState {
