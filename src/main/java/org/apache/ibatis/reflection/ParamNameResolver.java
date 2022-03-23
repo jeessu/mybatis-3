@@ -31,6 +31,10 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
+/**
+ * 工具类
+ * 参数名称解析器
+ */
 public class ParamNameResolver {
 
   public static final String GENERIC_NAME_PREFIX = "param";
@@ -120,18 +124,28 @@ public class ParamNameResolver {
    * @return the named params
    */
   public Object getNamedParams(Object[] args) {
+    // 获取方法中非特殊类型(RowBounds类型和ResultHandler类型)的参数个数
     final int paramCount = names.size();
     if (args == null || paramCount == 0) {
+      // 方法没有非特殊类型参数，返回null即可
       return null;
     } else if (!hasParamAnnotation && paramCount == 1) {
+      // 方法参数列表中没有使用@Param注解，且只有一个非特殊类型参数
       Object value = args[names.firstKey()];
       return wrapToMapIfCollection(value, useActualParamName ? names.get(0) : null);
     } else {
+      // 处理存在@Param注解或是存在多个非特殊类型参数的场景
+      // param集合用于记录了参数名称与实参之间的映射关系
+      // 这里的ParamMap继承了HashMap，与HashMap的唯一不同是：
+      // 向ParamMap中添加已经存在的key时，会直接抛出异常，而不是覆盖原有的Key
       final Map<String, Object> param = new ParamMap<>();
       int i = 0;
       for (Map.Entry<Integer, String> entry : names.entrySet()) {
+        // 将参数名称与实参的映射保存到param集合中
         param.put(entry.getValue(), args[entry.getKey()]);
         // add generic param names (param1, param2, ...)
+        // 同时，为参数创建"param+索引"格式的默认参数名称，具体格式为：param1, param2等，
+        // 将"param+索引"的默认参数名称与实参的映射关系也保存到param集合中
         final String genericParamName = GENERIC_NAME_PREFIX + (i + 1);
         // ensure not to overwrite parameter named with @Param
         if (!names.containsValue(genericParamName)) {

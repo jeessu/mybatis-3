@@ -24,6 +24,8 @@ import org.apache.ibatis.binding.MapperProxy.MapperMethodInvoker;
 import org.apache.ibatis.session.SqlSession;
 
 /**
+ * MapperProxyFactory 的核心功能就是创建 Mapper 接口的代理对象
+ *
  * @author Lasse Voss
  */
 public class MapperProxyFactory<T> {
