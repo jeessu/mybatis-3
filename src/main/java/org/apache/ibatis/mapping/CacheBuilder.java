@@ -35,16 +35,27 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 
 /**
+ * 缓存的构造器类
+ * --实现装饰缓存
+ *
  * @author Clinton Begin
  */
 public class CacheBuilder {
+  //缓存装饰器唯一标识id
   private final String id;
+  //缓存最终实现类？ 缓存本体？？
   private Class<? extends Cache> implementation;
+  //装饰器列表
   private final List<Class<? extends Cache>> decorators;
+  //缓存大小
   private Integer size;
+  //清除时间间隔
   private Long clearInterval;
+  //读写状态
   private boolean readWrite;
+  //其他属性
   private Properties properties;
+  //阻塞状态
   private boolean blocking;
 
   public CacheBuilder(String id) {
@@ -90,6 +101,7 @@ public class CacheBuilder {
   }
 
   public Cache build() {
+    //设置默认实现
     setDefaultImplementations();
     Cache cache = newBaseCacheInstance(implementation, id);
     setCacheProperties(cache);
@@ -108,6 +120,7 @@ public class CacheBuilder {
 
   private void setDefaultImplementations() {
     if (implementation == null) {
+      // 缓存实现类为null，则赋值为持久化缓存类
       implementation = PerpetualCache.class;
       if (decorators.isEmpty()) {
         decorators.add(LruCache.class);
@@ -115,6 +128,12 @@ public class CacheBuilder {
     }
   }
 
+  /**
+   * 设置标准的装饰器
+   *
+   * @param cache
+   * @return
+   */
   private Cache setStandardDecorators(Cache cache) {
     try {
       MetaObject metaCache = SystemMetaObject.forObject(cache);
@@ -150,25 +169,25 @@ public class CacheBuilder {
           if (String.class == type) {
             metaCache.setValue(name, value);
           } else if (int.class == type
-              || Integer.class == type) {
+            || Integer.class == type) {
             metaCache.setValue(name, Integer.valueOf(value));
           } else if (long.class == type
-              || Long.class == type) {
+            || Long.class == type) {
             metaCache.setValue(name, Long.valueOf(value));
           } else if (short.class == type
-              || Short.class == type) {
+            || Short.class == type) {
             metaCache.setValue(name, Short.valueOf(value));
           } else if (byte.class == type
-              || Byte.class == type) {
+            || Byte.class == type) {
             metaCache.setValue(name, Byte.valueOf(value));
           } else if (float.class == type
-              || Float.class == type) {
+            || Float.class == type) {
             metaCache.setValue(name, Float.valueOf(value));
           } else if (boolean.class == type
-              || Boolean.class == type) {
+            || Boolean.class == type) {
             metaCache.setValue(name, Boolean.valueOf(value));
           } else if (double.class == type
-              || Double.class == type) {
+            || Double.class == type) {
             metaCache.setValue(name, Double.valueOf(value));
           } else {
             throw new CacheException("Unsupported property type for cache: '" + name + "' of type " + type);
