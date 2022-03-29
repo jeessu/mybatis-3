@@ -43,7 +43,7 @@ import org.apache.ibatis.reflection.SystemMetaObject;
 public class CacheBuilder {
   //缓存装饰器唯一标识id
   private final String id;
-  //缓存最终实现类？ 缓存本体？？
+  //缓存最终实现类？ 缓存本体？？  ---缓存基础实现类
   private Class<? extends Cache> implementation;
   //装饰器列表
   private final List<Class<? extends Cache>> decorators;
@@ -103,14 +103,21 @@ public class CacheBuilder {
   public Cache build() {
     //设置默认实现
     setDefaultImplementations();
+    //implementation 缓存基础实现类(PerpetualCache.class)
     Cache cache = newBaseCacheInstance(implementation, id);
     setCacheProperties(cache);
     // issue #352, do not apply decorators to custom caches
     if (PerpetualCache.class.equals(cache.getClass())) {
+      /**
+       * 缓存拓展，添加新的缓存修饰器类
+       */
       for (Class<? extends Cache> decorator : decorators) {
         cache = newCacheDecoratorInstance(decorator, cache);
         setCacheProperties(cache);
       }
+      /**
+       * 设置标准修饰器
+       */
       cache = setStandardDecorators(cache);
     } else if (!LoggingCache.class.isAssignableFrom(cache.getClass())) {
       cache = new LoggingCache(cache);
@@ -118,6 +125,9 @@ public class CacheBuilder {
     return cache;
   }
 
+  /**
+   * 设置默认的缓存实现类
+   */
   private void setDefaultImplementations() {
     if (implementation == null) {
       // 缓存实现类为null，则赋值为持久化缓存类
@@ -138,18 +148,29 @@ public class CacheBuilder {
     try {
       MetaObject metaCache = SystemMetaObject.forObject(cache);
       if (size != null && metaCache.hasSetter("size")) {
+        //设置缓存大小
         metaCache.setValue("size", size);
       }
+      /**
+       * 如果有清除间隔，加入调度缓存装饰器类
+       */
       if (clearInterval != null) {
         cache = new ScheduledCache(cache);
         ((ScheduledCache) cache).setClearInterval(clearInterval);
       }
+      /**
+       * 加入序列化缓存
+       */
       if (readWrite) {
         cache = new SerializedCache(cache);
       }
+      /**
+       * 加入日志缓存 和同步缓存装饰器
+       */
       cache = new LoggingCache(cache);
       cache = new SynchronizedCache(cache);
       if (blocking) {
+        //如果阻塞状态有，则加入阻塞缓存
         cache = new BlockingCache(cache);
       }
       return cache;
@@ -206,8 +227,10 @@ public class CacheBuilder {
   }
 
   private Cache newBaseCacheInstance(Class<? extends Cache> cacheClass, String id) {
+    //获取基本缓存构造函数（有一个参数的构造函数）
     Constructor<? extends Cache> cacheConstructor = getBaseCacheConstructor(cacheClass);
     try {
+      //实例化缓存
       return cacheConstructor.newInstance(id);
     } catch (Exception e) {
       throw new CacheException("Could not instantiate cache implementation (" + cacheClass + "). Cause: " + e, e);

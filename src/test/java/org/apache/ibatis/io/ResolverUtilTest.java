@@ -22,6 +22,7 @@ import java.security.PrivilegedAction;
 import java.util.Set;
 
 import org.apache.ibatis.annotations.CacheNamespace;
+import org.apache.ibatis.builder.BaseBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +73,7 @@ class ResolverUtilTest {
   void findImplementations() {
     ResolverUtil<VFS> resolverUtil = new ResolverUtil<>();
     resolverUtil.findImplementations(VFS.class, "org.apache.ibatis.io");
+//    resolverUtil.findImplementations(BaseBuilder.class, "org.apache.ibatis");
     Set<Class<? extends VFS>> classSets = resolverUtil.getClasses();
     //org.apache.ibatis.io.VFS
     //org.apache.ibatis.io.DefaultVFS

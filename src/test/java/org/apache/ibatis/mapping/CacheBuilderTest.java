@@ -32,6 +32,7 @@ class CacheBuilderTest {
   @Test
   void testInitializing() {
     InitializingCache cache = unwrap(new CacheBuilder("test").implementation(InitializingCache.class).build());
+//    InitializingCache cache = unwrap(new CacheBuilder("test").implementation(null).build());
 
     Assertions.assertThat(cache.initialized).isTrue();
   }
