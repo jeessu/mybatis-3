@@ -120,6 +120,7 @@ public class CacheBuilder {
        */
       cache = setStandardDecorators(cache);
     } else if (!LoggingCache.class.isAssignableFrom(cache.getClass())) {
+      // 如果不是PerpetualCache类型，就是其他自定义类型的Cache，则添加一个LoggingCache装饰器
       cache = new LoggingCache(cache);
     }
     return cache;

@@ -50,10 +50,17 @@ public class LruCache implements Cache {
     keyMap = new LinkedHashMap<Object, Object>(size, .75F, true) {
       private static final long serialVersionUID = 4267176411845948333L;
 
+      /**
+       * 调用LinkedHashMap.put()方法时，会调用removeEldestEntry()方法
+       * 决定是否删除head指向的Entry数据
+       * @param eldest
+       * @return
+       */
       @Override
       protected boolean removeEldestEntry(Map.Entry<Object, Object> eldest) {
         boolean tooBig = size() > size;
         if (tooBig) {
+          // 已到达缓存上限，更新eldestKey字段，并返回true，LinkedHashMap会删除该Key
           eldestKey = eldest.getKey();
         }
         return tooBig;

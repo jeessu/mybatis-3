@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * InterceptorChain 是 Interceptor 构成的责任链
+ *
  * @author Clinton Begin
  */
 public class InterceptorChain {
@@ -28,6 +30,7 @@ public class InterceptorChain {
 
   public Object pluginAll(Object target) {
     for (Interceptor interceptor : interceptors) {
+      // 遍历interceptors集合，调用每个Interceptor对象的plugin()方法
       target = interceptor.plugin(target);
     }
     return target;
