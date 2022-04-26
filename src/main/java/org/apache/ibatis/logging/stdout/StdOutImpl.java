@@ -24,6 +24,7 @@ public class StdOutImpl implements Log {
 
   public StdOutImpl(String clazz) {
     // Do Nothing
+    System.out.println("std out " + clazz);
   }
 
   @Override

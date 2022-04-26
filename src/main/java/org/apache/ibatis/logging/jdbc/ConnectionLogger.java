@@ -30,7 +30,6 @@ import org.apache.ibatis.reflection.ExceptionUtil;
  *
  * @author Clinton Begin
  * @author Eduardo Macarron
- *
  */
 public final class ConnectionLogger extends BaseJdbcLogger implements InvocationHandler {
 
@@ -43,23 +42,37 @@ public final class ConnectionLogger extends BaseJdbcLogger implements Invocation
 
   @Override
   public Object invoke(Object proxy, Method method, Object[] params)
-      throws Throwable {
+    throws Throwable {
     try {
       if (Object.class.equals(method.getDeclaringClass())) {
+        // 如果调用的是从Object继承的方法，则直接调用，不做任何拦截
         return method.invoke(this, params);
       }
+      /**
+       * 调用prepareStatement()方法、prepareCall()方法的时候，
+       * 会在创建PreparedStatement对象之后，用PreparedStatementLogger为其创建代理对象
+       */
       if ("prepareStatement".equals(method.getName()) || "prepareCall".equals(method.getName())) {
         if (isDebugEnabled()) {
           debug(" Preparing: " + removeExtraWhitespace((String) params[0]), true);
         }
+        //调用方法
         PreparedStatement stmt = (PreparedStatement) method.invoke(connection, params);
+        //创建代理对象 PreparedStatementLogger
         stmt = PreparedStatementLogger.newInstance(stmt, statementLog, queryStack);
         return stmt;
       } else if ("createStatement".equals(method.getName())) {
+        /**
+         * 调用createStatement()方法的时候，
+         * 会在创建Statement对象之后，用StatementLogger为其创建代理对象
+         */
         Statement stmt = (Statement) method.invoke(connection, params);
         stmt = StatementLogger.newInstance(stmt, statementLog, queryStack);
         return stmt;
       } else {
+        /**
+         * 除了上述三个方法之外，其他方法的调用将直接传递给底层Connection对象的相应方法处理
+         */
         return method.invoke(connection, params);
       }
     } catch (Throwable t) {
@@ -70,12 +83,9 @@ public final class ConnectionLogger extends BaseJdbcLogger implements Invocation
   /**
    * Creates a logging version of a connection.
    *
-   * @param conn
-   *          the original connection
-   * @param statementLog
-   *          the statement log
-   * @param queryStack
-   *          the query stack
+   * @param conn         the original connection
+   * @param statementLog the statement log
+   * @param queryStack   the query stack
    * @return the connection with logging
    */
   public static Connection newInstance(Connection conn, Log statementLog, int queryStack) {

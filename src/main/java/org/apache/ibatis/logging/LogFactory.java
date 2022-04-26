@@ -28,10 +28,25 @@ public final class LogFactory {
    */
   public static final String MARKER = "MYBATIS";
 
+  /**
+   * 静态构造函数，用于实例化 -》getLog方法
+   */
   private static Constructor<? extends Log> logConstructor;
 
   static {
-    tryImplementation(LogFactory::useSlf4jLogging);
+//    tryImplementation(LogFactory::useSlf4jLogging);
+    //等价方式1.0
+//    tryImplementation(()->useSlf4jLogging());
+    //等价方式2.0
+    tryImplementation(new Runnable() {
+      @Override
+      public void run() {
+        useSlf4jLogging();
+      }
+    });
+    /**
+     * 尝试获取实现
+     */
     tryImplementation(LogFactory::useCommonsLogging);
     tryImplementation(LogFactory::useLog4J2Logging);
     tryImplementation(LogFactory::useLog4JLogging);
@@ -92,8 +107,15 @@ public final class LogFactory {
   }
 
   private static void tryImplementation(Runnable runnable) {
+    /**
+     * 1.判断 logConstructor未被实现则执行run方法 也就是尝试去实例化
+     */
     if (logConstructor == null) {
       try {
+        /**
+         * 2.调用useLog4JLogging、useLog4J2Logging、useJdkLogging等方法
+         * 因为开启新线程，所以方法上面都进行了同步synchronized
+         */
         runnable.run();
       } catch (Throwable t) {
         // ignore
@@ -103,11 +125,14 @@ public final class LogFactory {
 
   private static void setImplementation(Class<? extends Log> implClass) {
     try {
+      //获取一个参数的构造函数
       Constructor<? extends Log> candidate = implClass.getConstructor(String.class);
+      //实例化log对象
       Log log = candidate.newInstance(LogFactory.class.getName());
       if (log.isDebugEnabled()) {
         log.debug("Logging initialized using '" + implClass + "' adapter.");
       }
+      //赋值给静态变量
       logConstructor = candidate;
     } catch (Throwable t) {
       throw new LogException("Error setting Log implementation.  Cause: " + t, t);
