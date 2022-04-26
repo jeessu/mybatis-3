@@ -67,8 +67,17 @@ public class XMLScriptBuilder extends BaseBuilder {
     MixedSqlNode rootSqlNode = parseDynamicTags(context);
     SqlSource sqlSource;
     if (isDynamic) {
+      /**
+       * 动态Sql源
+       * 动态Sql 就是还需要后续执行时根据传入参数动态解析Sql（因为有<if></if>等,还要拼接${} sql
+       * 和参数ParameterMappings 也会在后续执行解析，因为动态条件肯定会有动态参数
+       */
       sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
     } else {
+      /**
+       * 静态Sql源如果没有动态际签(<if>、<where>等)以及没有${}就是静态Sql源
+       * 静态Sql 就是在这里就解析了Sql和参数ParameterMappings后续执行就不用解析了
+       */
       sqlSource = new RawSqlSource(configuration, rootSqlNode, parameterType);
     }
     return sqlSource;

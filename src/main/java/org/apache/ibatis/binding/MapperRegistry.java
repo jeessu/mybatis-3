@@ -64,11 +64,15 @@ public class MapperRegistry {
       }
       boolean loadCompleted = false;
       try {
+        /**
+         * 创建一个MapperProxyFactory把我们的Mapper接口保存到工厂类中
+         */
         knownMappers.put(type, new MapperProxyFactory<>(type));
         // It's important that the type is added before the parser is run
         // otherwise the binding may automatically be attempted by the
         // mapper parser. If the type is already known, it won't try.
         MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
+        //进行解析
         parser.parse();
         loadCompleted = true;
       } finally {
